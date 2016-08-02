@@ -18,6 +18,23 @@ crud-stream
 
 ---------
 
+crud-observable
+
+```
+var actions = CrudEmitter({
+    edit: (cb) => process.nextTick(cb)
+});
+actions.on('asyncStart')
+actions.on('edit')
+
+actions.edit({}, myCb);
+// emits 'edit'
+```
+
+
+---------
+
+
 crud-actions
 
 ```
