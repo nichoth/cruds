@@ -16,26 +16,31 @@ crud-stream
 
 ```
 
----------
+-----------------------------------------------------
 
-crud-observable
+emit events from async function call 
 
 ```
+// pass in async fns
 var actions = CrudEmitter({
     edit: (cb) => process.nextTick(cb)
 });
+
+// subscribe to events
 actions.on('asyncStart')
 actions.on('edit')
 
-actions.edit({}, myCb);
-// emits 'edit'
+actions.onAction((action) => { action has `type` that is fn name });
+
+// async fns are props on the emitter
+actions.edit({}, myCb);  // emits 'edit'
 ```
 
 
----------
+-----------------------------------------------------
 
 
-crud-actions
+stream events from our api calls
 
 ```
 actions = CrudActions({
@@ -51,27 +56,91 @@ actions.edit(cb);
 // calls cb
 ```
 
----------
+-----------------------------------------------------
 
-crud-store
+crud-store stream
 
 ```
-store = Store();
+// describe what to do with events
+store = Store({
+    edit: (state, ev) => newState
+});
+
+// this is how we get events
+// 'data' in stream must be like { type: '', data: {} }
 crudStream.pipe(store);
+
+// subscribe to changes in store state
 store(function onChange() {...})
 ```
 
----------
+-----------------------------------------------------
+
+crud store subscribe
 
 ```
+var store = Store({
+    'edit': (state, ev) => newState
+});
+
+store.subscribe = (ee) => {
+    evHash.forEach((fn, name) => ee.on(name, (d) => this.send(name, d)));
+}
+
+store.subscribe(ee);
+```
+
+-----------------------------------------------------
+
+
+all together
+
+```
+// pass in our api functions
 var actions = Actions(api.assets);
-var store = Store();
+
+var store = CrudStore();
+
 actions.createStream().pipe(store);
 websocket.assets.createStream().pipe(toCrudStream).pipe(store);
+
+// subscribe the view to store updates
 var controller = Controller(MyElmt);
 store.pipe(controller);
+
 var reactClass = controller.view();  // => react.cc({ 
 
+// stream everything? why not
 controller.pipe(actions);
 ```
 
+-----------------------------------------------------
+
+controller
+```
+var Controller = function (reactClass) {
+    var writableStream = ...;
+
+    writableStream.view = function () {
+        var View = reactClass;
+
+        return React.createClass({
+            componentWillMount: () => {
+                // subscribe to updates
+                writableStream.on('data', (ev) => this.setState(ev));
+            },
+
+            willUnmount: () => { // need to destroy stream },
+
+            render: () => {
+                <View {...this.state} {...this.props} />;
+            }
+        });
+    };
+
+    return writableStream;
+};
+
+store.pipe(Controller(myElmt))
+
+```
