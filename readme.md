@@ -144,3 +144,26 @@ var Controller = function (reactClass) {
 store.pipe(Controller(myElmt))
 
 ```
+
+
+
+----------------
+
+Different channels to update the same state. No event name collisions this way.
+
+```
+model = Model(initState)
+subscribeToApi = model({ actions })
+subscribeToSocket = model({ otherActions })
+
+model.onChange((data) => ...)
+
+subscribeToApi(apiEventEmitter)
+subscribeToSocket(socket)
+subscribeToSocket(otherSocket)
+
+subscribeToApi.send('update', {})
+```
+
+
+
