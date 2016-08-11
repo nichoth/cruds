@@ -167,3 +167,52 @@ subscribeToApi.send('update', {})
 
 
 
+-------------------------
+
+static functions
+
+```
+State = () => struct({ isResolving: false, data: {} });
+
+// set resolving status
+ApiActions = {
+    AsyncStart: (state) => state.isResolving.set(true),
+    Update: (state, data) => state.set({ isResolving: false, data: ... }),
+    Get: ...,
+    Delete: ...
+}
+
+// dont change resolving state
+SocketActions = {
+    Update: (state, data) => state.set(xtend(state(), { data: ... })),
+    ...
+}
+
+var state = State();
+apiEvents.on('update', ApiActions.Update.bind(null, state));
+
+// util to do this for any api domain
+function SubscribeToApi (state, eventEmitter) {
+    // do this for each type of event
+    apiEvents.on('update', ApiActions.Update.bind(null, state));
+}
+
+// change data format
+function Parse (state, parser) {
+    var parsedState = struct(parser(state()));
+    state((data) => parsedState.set(parser(data)));
+    return parsedState;
+}
+
+// all our api function signatures are the same, so we can encapsulate
+// event stuff
+function FunctionToEvents (emitter, eventName, fn) {
+    emitter.emit('asyncStart');
+    return function (opts, cb) {
+        fn({}, function onResp (err, data) {
+            // handle error too
+            emitter.emit(eventName, data)
+        });
+    }
+}
+```
